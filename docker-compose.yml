@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  ruview-sensing-server:
+    image: ruvnet/wifi-densepose:latest
+    container_name: ruview-sensing-server
+    ports:
+      - "3000:3000"  # Dashboard
+      - "5006:5006"  # CSI streaming
+    environment:
+      - RUST_LOG=debug
+      - CSI_SOURCE=simulated
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    networks:
+      - sensing-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-server:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: wifi-sensing-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RUVIEW_HOST=ruview-sensing-server
+      - RUVIEW_PORT=5006
+    volumes:
+      - ./apps/api:/app
+      - ./data:/app/data
+    depends_on:
+      ruview-sensing-server:
+        condition: service_healthy
+    networks:
+      - sensing-network
+    command: python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  mqtt-broker:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+    networks:
+      - sensing-network
+
+networks:
+  sensing-network:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
