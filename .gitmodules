@@ -1,0 +1,4 @@
+[submodule "projects/ruview"]
+	path = projects/ruview
+	url = https://github.com/ruvnet/RuView.git
+	branch = main

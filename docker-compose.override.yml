@@ -1,0 +1,18 @@
+# Development overrides - automatically loaded by docker-compose
+version: '3.9'
+
+services:
+  ruview-sensing-server:
+    environment:
+      - CSI_SOURCE=demo
+      - DEMO_MODE=true
+      - API_LOG_LEVEL=debug
+    ports:
+      - "3000:3000"
+      - "5006:5006"
+
+  api-server:
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+      - LOG_LEVEL=debug
